@@ -7,6 +7,8 @@ import { Table, TableBody, TableHeader, TableHead, TableRow, TableCell } from '.
 import { Pagination } from './components/pagination'
 import { keepPreviousData, useQuery  } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import useDebounceValue from './hooks/useDebounceValue'
 
 
 export interface TagResonse {
@@ -27,10 +29,20 @@ export interface Tags {
 
 
 export function App() {
-  const [searchParams] = useSearchParams() 
+
+  const [searchParams, setSearchParams] = useSearchParams() 
+  const [filter, setFilter] = useState('')
+  const debouncedFilter = useDebounceValue(filter, 1000)
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1
+  
+  useEffect(() => {
+    setSearchParams(params => {
+      params.set('page', '1')
+      return params
+    })
+  },[debouncedFilter])
   const { data: tagsResponse, isLoading } = useQuery<TagResonse>({
-    queryKey: ['get-tags',page],
+    queryKey: ['get-tags',page, debouncedFilter],
     queryFn: async () => {
     const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=10`)
     const data = await response.json()
@@ -62,7 +74,7 @@ export function App() {
         <div className="flex items-center justify-between">
           <Input variant="filter">
             <Search className="size-3" />
-            <Control className="text-sm text-zinc-500" placeholder="Search..." />
+            <Control className="text-sm text-zinc-500" placeholder="Search..." onChange={e => setFilter(e.target.value)} />
           </Input>
 
           <Button >
