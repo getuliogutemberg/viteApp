@@ -1,4 +1,4 @@
-import { FileDown, MoreHorizontal, Plus, Search } from 'lucide-react'
+import { FileDown, MoreHorizontal, Plus, Search, Filter } from 'lucide-react'
 import { Header } from './components/header'
 import { Tabs } from './components/tabs'
 import { Button } from './components/ui/button'
@@ -9,6 +9,7 @@ import { keepPreviousData, useQuery  } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import useDebounceValue from './hooks/useDebounceValue'
+
 
 
 export interface TagResonse {
@@ -28,12 +29,15 @@ export interface Tags {
 }
 
 
+
+
 export function App() {
 
   const [searchParams, setSearchParams] = useSearchParams() 
   const [filter, setFilter] = useState('')
   const debouncedFilter = useDebounceValue(filter, 1000)
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1
+  const urlFilter = searchParams.get('filter')
   
   useEffect(() => {
     setSearchParams(params => {
@@ -41,10 +45,11 @@ export function App() {
       return params
     })
   },[debouncedFilter])
+  
   const { data: tagsResponse, isLoading } = useQuery<TagResonse>({
-    queryKey: ['get-tags',page, debouncedFilter],
+    queryKey: ['get-tags',page, urlFilter],
     queryFn: async () => {
-    const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=10`)
+    const response = await fetch(`http://localhost:3333/tags?_page=${page}&_per_page=10&title=${debouncedFilter}`)
     const data = await response.json()
     console.log(data)
 
@@ -60,6 +65,14 @@ export function App() {
     return <div>Loading...</div>
   }
 
+  const handleFilter = () => {
+    setSearchParams(params => {
+      params.set('page', '1')
+      params.set('filter', filter)
+      return params
+    })
+  }
+
   return (
     <div className="py-10 space-y-8">
       <div className="">
@@ -71,11 +84,21 @@ export function App() {
         <h1 className="text-xl font-bold">Tags</h1>
         <Button variant='primary' className=" flex items-center gap-1.5 text-xs bg-teal-300 text-teal-950 font-medium rounded-full px-2 py-1 "><Plus className='size-3'/>Create new</Button>
         </div>
+
         <div className="flex items-center justify-between">
+          <div className='flex items-center gap-3'>
           <Input variant="filter">
             <Search className="size-3" />
             <Control className="text-sm text-zinc-500" placeholder="Search..." onChange={e => setFilter(e.target.value)} />
           </Input>
+
+          <Button onClick={handleFilter}>
+            <Filter className="size-3" />
+            Filter
+          </Button>
+          </div>
+
+          
 
           <Button >
             <FileDown />
